@@ -1,0 +1,30 @@
+{
+  "summary": "RETEST PASSED on 390x844 mobile viewport. All 3 iteration-1 bugs fixed and verified end-to-end: (1) autocomplete-bar NOW appears after typing '\\nco' into sample.js with suggestion-console/suggestion-const/suggestion-constructor present; tapping suggestion-console inserts 'console' at the caret (caret estimation via text diff in onChangeText works). (2) editor-more-btn -> more-history closes the editor-more-sheet (MORE_SHEET_VISIBLE=False after navigation) and lands on history-screen cleanly - the 300ms delay successfully dismisses the modal before router.push. (3) 'My first commit' entered via commit-sheet-input and committed via commit-sheet-confirm shows as the top version row label (not 'Autosave'); same for history-commit-btn -> 'Second named commit' top row. Sheet confirm buttons for commit-sheet and history-commit-sheet are now reachable with a NORMAL (non-force) click at 390x844 (bbox y=780 h=48, bottom=828 within 844). Confirm buttons are disabled when input is empty (Button prop + visual opacity 0.5) and enable after typing. Quick regression all green: home list (2 files), autosave status 'Saved · Auto: JavaScript', find-count 1/2 for 'greet', check-screen offline shows score 96 with 1 code issue (no network errors). No red screen, no console errors observed.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "ui.tsx Button accessibility", "issue": "Button does not forward disabled state via accessibilityState, so DOM aria-disabled is not set. Visually it dims (opacity 0.5) and Pressable blocks onPress, but screen readers / Playwright is_disabled() report false. Reference: /app/frontend/src/components/ui.tsx:60-69. Low priority."}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/backend_test.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "Optional: pass accessibilityState={{disabled}} on the Button Pressable so assistive tech / tests can detect disabled state.",
+    "Earlier non-blocking: react-native-web warning 'props.pointerEvents is deprecated' still present (from a dep)."
+  ],
+  "critical_code_review_comments": [
+    "store.tsx addVersion is now serialized via verQueue (Promise chain) which fixes the race between autosave and named commit - good fix.",
+    "store.tsx line 267: autosave with identical content is promoted to named commit (list[0] = {...v, id: last.id}) - matches expected behavior.",
+    "editor.tsx goTo adds 300ms delay only when the sheet was open, preserving instant nav when invoked elsewhere - clean.",
+    "editor.tsx onChangeText now computes caret from text diff (common-suffix), fixing autocomplete prefix detection when selectionChange hasn't fired yet."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not retested (skipped per request)", "frontend": "100% (all retest targets + regression green)"},
+  "seed_data_creation": "None.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All 3 reported frontend bugs from iteration_1 are fixed. Sheet confirm buttons are now within viewport at 390x844 (bbox y=780, visible). addVersion is now Promise-queued in /app/frontend/src/lib/store.tsx (verQueue). Autocomplete requires text to end with a word prefix of length>=2 - verified working after fill(). To open sample.js from home, iterate [data-testid^='file-row-'] and match text 'sample'.",
+  "rca_of_issue": "Previous iteration root causes (now fixed): (a) autocomplete missed because selectionChange lagged behind onChangeText - resolved by computing caret in onChangeText via common-suffix diff; (b) more-history ghost overlay - resolved by setMoreOpen(false) then setTimeout(push, 300); (c) commit label lost - resolved by Promise-serialized addVersion queue + autosave->named promotion when content unchanged."
+}

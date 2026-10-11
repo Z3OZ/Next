@@ -1,0 +1,209 @@
+{
+  "app_name": "NexaEdit",
+  "personality": "7 Dark-First Utility",
+  "personality_one_liner": "A sharp, high-performance editor interface that prioritizes code clarity, fast interactions, and absolute focus.",
+  "color": {
+    "light": {
+      "surface": "#FFFFFF",
+      "onSurface": "#1E1E1E",
+      "surfaceSecondary": "#F3F3F3",
+      "onSurfaceSecondary": "#333333",
+      "surfaceTertiary": "#E8E8E8",
+      "onSurfaceTertiary": "#555555",
+      "surfaceInverse": "#1E1E1E",
+      "onSurfaceInverse": "#FFFFFF",
+      "brand": "#D97757",
+      "onBrand": "#FFFFFF",
+      "brandPrimary": "#D97757",
+      "onBrandPrimary": "#FFFFFF",
+      "brandSecondary": "#C16346",
+      "onBrandSecondary": "#FFFFFF",
+      "brandTertiary": "#F7DFD7",
+      "onBrandTertiary": "#D97757",
+      "success": "#388E3C",
+      "onSuccess": "#FFFFFF",
+      "warning": "#F57C00",
+      "onWarning": "#FFFFFF",
+      "error": "#D32F2F",
+      "onError": "#FFFFFF",
+      "info": "#546E7A",
+      "onInfo": "#FFFFFF",
+      "border": "#E0E0E0",
+      "borderStrong": "#BDBDBD",
+      "divider": "#EEEEEE",
+      "muted": "#757575",
+      "syntax": {
+        "keyword": "#D32F2F",
+        "string": "#2E7D32",
+        "number": "#E65100",
+        "comment": "#757575",
+        "function": "#F57C00",
+        "type": "#00695C",
+        "operator": "#424242",
+        "tag": "#D32F2F",
+        "attr": "#E65100"
+      }
+    },
+    "dark": {
+      "surface": "#1E1E1E",
+      "onSurface": "#D4D4D4",
+      "surfaceSecondary": "#252526",
+      "onSurfaceSecondary": "#CCCCCC",
+      "surfaceTertiary": "#2D2D30",
+      "onSurfaceTertiary": "#E0E0E0",
+      "surfaceInverse": "#FFFFFF",
+      "onSurfaceInverse": "#1E1E1E",
+      "brand": "#E6B450",
+      "onBrand": "#1E1E1E",
+      "brandPrimary": "#E6B450",
+      "onBrandPrimary": "#1E1E1E",
+      "brandSecondary": "#C99638",
+      "onBrandSecondary": "#1E1E1E",
+      "brandTertiary": "#4A3C1F",
+      "onBrandTertiary": "#E6B450",
+      "success": "#81C784",
+      "onSuccess": "#1E1E1E",
+      "warning": "#FFB74D",
+      "onWarning": "#1E1E1E",
+      "error": "#E57373",
+      "onError": "#1E1E1E",
+      "info": "#78909C",
+      "onInfo": "#1E1E1E",
+      "border": "#3E3E42",
+      "borderStrong": "#555555",
+      "divider": "#2D2D30",
+      "muted": "#858585",
+      "syntax": {
+        "keyword": "#F92672",
+        "string": "#A6E22E",
+        "number": "#FD971F",
+        "comment": "#75715E",
+        "function": "#E6DB74",
+        "type": "#4DB6AC",
+        "operator": "#F8F8F2",
+        "tag": "#F92672",
+        "attr": "#A6E22E"
+      }
+    }
+  },
+  "typography": {
+    "displayFontFamily": "Inter",
+    "textFontFamily": "JetBrains Mono",
+    "scale": {
+      "sm": 12,
+      "base": 14,
+      "lg": 16,
+      "xl": 20,
+      "2xl": 24
+    }
+  },
+  "spacing": {
+    "rule": "Dense information architecture. Maintain strict padding alignment to maximize editor space.",
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "2xl": 32,
+    "3xl": 48
+  },
+  "radius_tokens": {
+    "sm": 4,
+    "md": 8,
+    "lg": 12,
+    "pill": 999
+  },
+  "shadow_tier": "0",
+  "navigation": "drawer_with_stack",
+  "icon_set": "Phosphor",
+  "glassmorphism": {
+    "enabled": "false",
+    "do's": [
+      "Keep surfaces solid to maximize text readability and contrast during long coding sessions."
+    ],
+    "dont's": [
+      "Do not use blur or glass effects in the editor, file tree, or syntax toolbars."
+    ]
+  },
+  "platform_libraries": {
+    "glass": {
+      "ios": "expo-glass-effect",
+      "android": "expo-blur",
+      "low_end_android_fallback": "solid surfaceSecondary"
+    },
+    "image": "expo-image",
+    "blur": "expo-blur",
+    "bottom_sheet": "@gorhom/bottom-sheet",
+    "animation": "react-native-reanimated",
+    "gesture": "react-native-gesture-handler"
+  },
+  "screens": [
+    {
+      "name": "Home (File Explorer)",
+      "purpose": "Displays recent documents, pinned projects, and device storage entry points.",
+      "states": {
+        "loading": "Skeleton rows of file names.",
+        "empty": "Illustration of an empty folder with a 'Create New File' CTA.",
+        "error": "Message 'Unable to read storage' with a 'Retry' or 'Check Permissions' button."
+      },
+      "layout": "Left drawer for repository/storage locations. Main view lists recent files with icon, name, path, and last modified date. Floating Action Button (FAB) at bottom right to create a new file."
+    },
+    {
+      "name": "Editor",
+      "purpose": "The core coding/writing surface with multi-tab support, syntax highlighting, and quick accessories.",
+      "states": {
+        "loading": "Spinner centered in the editor canvas.",
+        "empty": "N/A (New file opens with a blank cursor).",
+        "error": "Toast indicating 'Failed to save file'."
+      },
+      "layout": "Top edge: Horizontal scrollable tabs for open files. Right header action: AI Coach / Grammar icon. Below tabs: Collapsible Find & Replace bar. Main body: Monospaced text area with left gutter for line numbers. Overlay syntax highlighting via custom text spans. Bottom edge (above keyboard): Horizontal scrollable accessory toolbar containing common coding characters (brackets, operators, tab). Floating above accessory bar: Autocomplete suggestion pills. Top right indicator shows Autosave status (e.g., 'Saved', 'Unsaved')."
+    },
+    {
+      "name": "Version History & Diff",
+      "purpose": "Shows past auto-saved versions of the current file and allows restoration.",
+      "states": {
+        "loading": "Skeleton list of timestamps.",
+        "empty": "Message 'No versions saved yet.'",
+        "error": "Message 'Failed to load history' with Retry CTA."
+      },
+      "layout": "Split view or Bottom Sheet. Top half: List of timestamps/revisions. Bottom half (or full screen when selected): Diff view showing old vs new changes using green/red background highlights for additions/deletions. Sticky 'Restore this version' CTA at the bottom."
+    },
+    {
+      "name": "AI Writing Coach / Diagnostics",
+      "purpose": "Reviews the document for grammar, spelling, or coding issues and suggests improvements.",
+      "states": {
+        "loading": "Pulsing 'Analyzing text...' skeleton.",
+        "empty": "Message 'No issues found. Looks great!'",
+        "error": "Message 'Analysis failed' with Retry CTA."
+      },
+      "layout": "Presented as a Bottom Sheet (@gorhom/bottom-sheet). Header includes title and overall score. Body contains a scrollable list of issue cards. Each card highlights the problematic text, explains the rule/suggestion, and offers an 'Apply Fix' button. Tapping a card scrolls the main editor to the relevant line."
+    },
+    {
+      "name": "Settings",
+      "purpose": "Allows customization of theme, font size, and editor behaviors.",
+      "states": {
+        "loading": "N/A",
+        "empty": "N/A",
+        "error": "N/A"
+      },
+      "layout": "Standard list layout. Sections for Appearance (Theme toggle, Font Size stepper, Word Wrap toggle), Editor (Autosave interval slider, Code Completion toggle), and Sync (Cloud Sync settings). Utilize surfaceSecondary for list items with divider separation."
+    }
+  ],
+  "images": {
+    "empty_home": {
+      "url": "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NTJ8MHwxfHNlYXJjaHwyfHxkYXJrJTIwY29kZSUyMGVkaXRvciUyMGFic3RyYWN0fGVufDB8fHx8MTc5MTcyNDQ2M3ww&ixlib=rb-4.1.0&q=85",
+      "dark": "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NTJ8MHwxfHNlYXJjaHwyfHxkYXJrJTIwY29kZSUyMGVkaXRvciUyMGFic3RyYWN0fGVufDB8fHx8MTc5MTcyNDQ2M3ww&ixlib=rb-4.1.0&q=85",
+      "alt": "Abstract gray laptop displaying code, used for empty states"
+    }
+  },
+  "instructions_to_main_agent": [
+    "Strictly follow the '7 Dark-First Utility' personality. Maximize screen real estate for the editor canvas. Borders and dividers should be minimal (shadow_tier 0) to avoid visual noise.",
+    "BANNED COLOR RULE IS IN EFFECT: Absolutely NO indigo, blue, navy, sky blue, purple, or violet across the app, including syntax highlighting. Use the provided Amber/Rust brand tokens, and the Monokai-inspired green/orange/red syntax tokens.",
+    "Implement both Light and Dark modes. Read the respective token objects from the JSON 'color' property. Map them to your theme provider.",
+    "For the Editor screen, ensure virtualized rendering or optimized TextInput for large files. Include a horizontal scrollable accessory toolbar anchored above the keyboard to provide quick access to symbols like tabs, brackets, and operators.",
+    "Disable platform-level autocorrect, auto-capitalization, and spellcheck inside the code editor `TextInput` to prevent text mutation.",
+    "The AI Coach should act as a Bottom Sheet that overlays the editor, providing actionable suggestion cards that update the text when accepted.",
+    "Apply 'JetBrains Mono' (or a suitable monospaced alternative) explicitly to the editor text and line numbers. Use 'Inter' for UI chrome (menus, buttons, tabs).",
+    "Provide Haptics on tab switching, accessory bar key presses, and applying AI suggestions."
+  ]
+}
