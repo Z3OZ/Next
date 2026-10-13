@@ -27,6 +27,13 @@ Build an APK Android app that clones all features of Jota++ (text editor) plus m
 - Settings: theme dark/light/system, font size, toggles, tab size, autosave delay, cloud backup/restore via sync code
 - Tested: iteration 1 & 2 (backend 100%, frontend fixes verified)
 
+## Iteration 2 (2026-06)
+- Fixed ghost/overlapping text: single-layer RichEditor (TextInput with colored nested spans), measured line numbers for wrapped lines
+- Higher contrast dark/light tokens
+- Font settings: font type, size, line spacing, syntax color schemes (Monokai, Dracula, GitHub, Solarized, High contrast), text color — global + per language
+- Text Compare screen: word/line diff, similarity %, added/removed/changed/same, locations, similarities, marked view, previous comparisons with recount
+- Status bar: cursor Ln/Col, words, chars, lines
+
 ## Backlog
 - P1: Full dictionary-based spell check (currently common-misspellings list), Save to device folders (SAF), encoding selection
 - P1: Split-screen / side-by-side diff, branching of versions

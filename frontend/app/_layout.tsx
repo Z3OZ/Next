@@ -25,6 +25,7 @@ function ThemedStack() {
         <Stack.Screen name="history" options={{ presentation: "modal" }} />
         <Stack.Screen name="check" options={{ presentation: "modal" }} />
         <Stack.Screen name="settings" />
+        <Stack.Screen name="compare" />
       </Stack>
     </View>
   );

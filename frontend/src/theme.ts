@@ -11,10 +11,10 @@ const light = {
   surfaceSecondary: "#F3F3F3",
   onSurfaceSecondary: "#333333",
   surfaceTertiary: "#E8E8E8",
-  onSurfaceTertiary: "#555555",
+  onSurfaceTertiary: "#3D3D3D",
   surfaceInverse: "#1E1E1E",
   onSurfaceInverse: "#FFFFFF",
-  muted: "#757575",
+  muted: "#5F5F5F",
 
   brand: "#D97757",
   onBrand: "#FFFFFF",
@@ -40,7 +40,7 @@ const light = {
 
   // Editor-specific
   gutter: "#F3F3F3",
-  onGutter: "#9E9E9E",
+  onGutter: "#757575",
   caret: "#D97757",
   matchBg: "#FFE0B2",
   matchActiveBg: "#FFB74D",
@@ -53,7 +53,7 @@ const light = {
   synKeyword: "#D32F2F",
   synString: "#2E7D32",
   synNumber: "#E65100",
-  synComment: "#8A8A8A",
+  synComment: "#6B6B6B",
   synFunction: "#C77700",
   synType: "#00695C",
   synOperator: "#424242",
@@ -66,14 +66,14 @@ export type ThemeColors = typeof light;
 
 const dark: ThemeColors = {
   surface: "#1E1E1E",
-  onSurface: "#D4D4D4",
+  onSurface: "#EDEDED",
   surfaceSecondary: "#252526",
-  onSurfaceSecondary: "#CCCCCC",
+  onSurfaceSecondary: "#E3E3E3",
   surfaceTertiary: "#2D2D30",
   onSurfaceTertiary: "#E0E0E0",
   surfaceInverse: "#FFFFFF",
   onSurfaceInverse: "#1E1E1E",
-  muted: "#858585",
+  muted: "#A8A8A8",
 
   brand: "#E6B450",
   onBrand: "#1E1E1E",
@@ -98,7 +98,7 @@ const dark: ThemeColors = {
   divider: "#2D2D30",
 
   gutter: "#1E1E1E",
-  onGutter: "#5A5A5A",
+  onGutter: "#8C8C8C",
   caret: "#E6B450",
   matchBg: "#4A3C1F",
   matchActiveBg: "#8A6A20",
@@ -111,13 +111,13 @@ const dark: ThemeColors = {
   synKeyword: "#F92672",
   synString: "#A6E22E",
   synNumber: "#FD971F",
-  synComment: "#75715E",
+  synComment: "#A39E86",
   synFunction: "#E6DB74",
   synType: "#4DB6AC",
   synOperator: "#F8F8F2",
   synTag: "#F92672",
   synAttr: "#A6E22E",
-  synPlain: "#D4D4D4",
+  synPlain: "#EDEDED",
 };
 
 export const defaultScheme: ColorScheme = "dark";

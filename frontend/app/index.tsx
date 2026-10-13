@@ -89,6 +89,7 @@ export default function Home() {
             <Text style={styles.title} testID="app-title">NexaEdit</Text>
             <Text style={styles.subtitle}>{docs.length} files · offline</Text>
           </View>
+          <IconButton testID="open-compare-btn" name="compare-horizontal" onPress={() => router.push("/compare")} />
           <IconButton testID="open-device-file-btn" name="folder-open-outline" onPress={onImport} />
           <IconButton testID="open-settings-btn" name="cog-outline" onPress={() => router.push("/settings")} />
         </View>

@@ -4,6 +4,8 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Button, IconButton, PromptSheet, useToast } from "@/src/components/ui";
+import { FontStyleEditor } from "@/src/components/FontStyleEditor";
+import { getLang, LANGUAGES } from "@/src/lib/languages";
 import { api } from "@/src/lib/api";
 import { copyText } from "@/src/lib/files";
 import { Settings, timeAgo, useStore } from "@/src/lib/store";
@@ -31,6 +33,7 @@ export default function SettingsScreen() {
   const { settings, updateSettings, docs, mergeDocs } = useStore();
   const [busy, setBusy] = useState<"push" | "pull" | null>(null);
   const [codeOpen, setCodeOpen] = useState(false);
+  const [styleLang, setStyleLang] = useState<string>("javascript");
 
   const Toggle = ({ k, label, desc }: { k: keyof Settings; label: string; desc?: string }) => (
     <View style={styles.row}>
@@ -99,6 +102,43 @@ export default function SettingsScreen() {
           <Toggle k="wordWrap" label="Word wrap" desc="Wrap long lines instead of scrolling sideways" />
           <Toggle k="lineNumbers" label="Line numbers" />
           <Toggle k="highlight" label="Syntax highlighting" desc="Color code by language (auto-detected)" />
+          <View style={styles.rowCol}>
+            <Text style={styles.label}>Line spacing</Text>
+            <Segmented testID="line-spacing" value={settings.lineSpacing} onChange={(v) => updateSettings({ lineSpacing: v })} options={[{ v: 1.3, l: "Compact" }, { v: 1.5, l: "Normal" }, { v: 1.8, l: "Relaxed" }]} />
+          </View>
+        </View>
+
+        <Text style={styles.section}>Fonts & colors</Text>
+        <View style={[styles.group, { padding: spacing.lg }]} testID="global-font-section">
+          <FontStyleEditor
+            testID="global-font"
+            settings={settings}
+            lang="default"
+            perLanguage={false}
+            prefs={{ fontFamily: settings.fontFamily, palette: settings.palette, textColor: settings.textColor }}
+            onChange={(p) => updateSettings({ fontFamily: p.fontFamily ?? settings.fontFamily, palette: p.palette ?? settings.palette, textColor: p.textColor ?? "" })}
+          />
+        </View>
+
+        <Text style={styles.section}>Per-language style</Text>
+        <View style={[styles.group, { padding: spacing.lg, gap: spacing.md }]} testID="lang-font-section">
+          <Text style={styles.desc}>Override font, size and colors for a specific language. “Default” uses the settings above.</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
+            {LANGUAGES.map((l) => (
+              <Pressable key={l.id} testID={`lang-style-${l.id}`} onPress={() => setStyleLang(l.id)} style={[styles.langChip, styleLang === l.id && styles.langChipActive]}>
+                <Text style={[styles.segText, styleLang === l.id && { color: colors.onBrandTertiary }]}>{l.name}{settings.langFonts?.[l.id] && Object.values(settings.langFonts[l.id]).some(Boolean) ? " •" : ""}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+          <FontStyleEditor
+            testID="lang-font"
+            settings={settings}
+            lang={styleLang}
+            perLanguage
+            prefs={settings.langFonts?.[styleLang] ?? {}}
+            onChange={(p) => updateSettings({ langFonts: { ...settings.langFonts, [styleLang]: p } })}
+          />
+          <Button testID="reset-lang-style-btn" label={`Reset ${getLang(styleLang).name} to default`} variant="ghost" onPress={() => { const n = { ...settings.langFonts }; delete n[styleLang]; updateSettings({ langFonts: n }); }} />
         </View>
 
         <Text style={styles.section}>Editor</Text>
@@ -171,6 +211,8 @@ const useStyles = makeStyles((c) => ({
   segBtnActive: { backgroundColor: c.brandPrimary },
   segText: { color: c.onSurfaceTertiary, fontSize: 13, fontWeight: "600" },
   segTextActive: { color: c.onBrandPrimary },
+  langChip: { flexShrink: 0, height: 36, paddingHorizontal: spacing.md, borderRadius: radius.pill, backgroundColor: c.surfaceTertiary, borderWidth: 1, borderColor: c.surfaceTertiary, justifyContent: "center" },
+  langChipActive: { backgroundColor: c.brandTertiary, borderColor: c.brandPrimary },
   codeBox: { flexDirection: "row", alignItems: "center", paddingLeft: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: c.border, backgroundColor: c.surfaceTertiary },
   code: { flex: 1, color: c.onSurface, fontFamily: MONO, fontSize: 16, letterSpacing: 1 },
 }));

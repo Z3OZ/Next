@@ -27,6 +27,11 @@ export type Settings = {
   autoClose: boolean;
   autosaveSec: number;
   tabSize: number;
+  fontFamily: string;
+  lineSpacing: number;
+  textColor: string;
+  palette: string;
+  langFonts: Record<string, { fontFamily?: string; fontSize?: number; textColor?: string; palette?: string }>;
   syncId: string;
   lastSync: number | null;
 };
@@ -39,7 +44,7 @@ const genSync = () => {
 
 export const DEFAULT_SETTINGS: Settings = {
   theme: "dark", fontSize: 14, wordWrap: true, lineNumbers: true, highlight: true, autocomplete: true,
-  autoIndent: true, autoClose: true, autosaveSec: 2, tabSize: 2, syncId: "", lastSync: null,
+  autoIndent: true, autoClose: true, autosaveSec: 2, tabSize: 2, fontFamily: "spacemono", lineSpacing: 1.5, textColor: "", palette: "theme", langFonts: {}, syncId: "", lastSync: null,
 };
 
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);

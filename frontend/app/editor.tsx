@@ -5,7 +5,8 @@ import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 
-import { CodeEditor, Sel } from "@/src/components/CodeEditor";
+import { RichEditor, Sel } from "@/src/components/RichEditor";
+import { resolveEditorStyle } from "@/src/lib/fonts";
 import { Button, Icon, IconButton, PromptSheet, Sheet, SheetRow, tap, useToast } from "@/src/components/ui";
 import { copyText, shareText } from "@/src/lib/files";
 import { detectLanguage, getLang, LANGUAGES } from "@/src/lib/languages";
@@ -27,7 +28,7 @@ export default function EditorScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const styles = useStyles();
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
   const toast = useToast();
   const store = useStore();
   const { docs, activeId, openTabs, settings, updateDoc, addVersion, getVersions, openDoc, closeTab, createDoc } = store;
@@ -297,7 +298,8 @@ export default function EditorScreen() {
   }, [findOpen, findQ, caseS, useRegex, deferred]);
   const activeMatch = matches.length ? Math.min(matchIdx, matches.length - 1) : -1;
 
-  const lineHeight = Math.round(settings.fontSize * 1.55);
+  const editorStyle = useMemo(() => resolveEditorStyle(settings, lang.effective, scheme, colors), [settings, lang.effective, scheme, colors]);
+  const lineHeight = Math.round(editorStyle.size * editorStyle.lineSpacing);
   const scrollToOffset = (off: number) => {
     const line = textRef.current.slice(0, off).split("\n").length - 1;
     scrollRef.current?.scrollTo({ y: Math.max(0, line * lineHeight - 120), animated: true });
@@ -336,8 +338,9 @@ export default function EditorScreen() {
     const ln = before.split("\n").length;
     const col = sel.start - before.lastIndexOf("\n");
     const words = (deferred.match(/\S+/g) ?? []).length;
-    return { ln, col, words, lines: text.split("\n").length };
-  }, [text, sel.start, deferred]);
+    const selected = Math.abs(sel.end - sel.start);
+    return { ln, col, words, chars: text.length, selected, lines: text.split("\n").length };
+  }, [text, sel.start, sel.end, deferred]);
 
   const goTo = (route: "/history" | "/check") => {
     flush();
@@ -455,13 +458,13 @@ export default function EditorScreen() {
 
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
         <View style={{ flex: 1, backgroundColor: colors.surface }}>
-          <CodeEditor
+          <RichEditor
             value={text}
             onChangeText={onChangeText}
             onSelectionChange={(s) => { selRef.current = s; setSel(s); }}
             selection={forcedSel}
             language={lang.effective}
-            fontSize={settings.fontSize}
+            font={editorStyle}
             wordWrap={settings.wordWrap}
             lineNumbers={settings.lineNumbers}
             highlight={settings.highlight}
@@ -500,8 +503,13 @@ export default function EditorScreen() {
         </View>
 
         <View style={[styles.status, { paddingBottom: insets.bottom + spacing.xs }]} testID="status-bar">
-          <Text style={styles.statusText} testID="cursor-position">Ln {cursor.ln}, Col {cursor.col}</Text>
-          <Text style={styles.statusText}>{cursor.lines} lines · {cursor.words} words</Text>
+          <View style={styles.statusPill} testID="cursor-position">
+            <Icon name="cursor-text" size={13} color={colors.onBrandTertiary} />
+            <Text style={styles.statusStrong}>Ln {cursor.ln}, Col {cursor.col}{cursor.selected ? ` (${cursor.selected} sel)` : ""}</Text>
+          </View>
+          <Text style={styles.statusText} testID="word-count">{cursor.words} words</Text>
+          <Text style={styles.statusText} testID="char-count">{cursor.chars} chars</Text>
+          <Text style={styles.statusText} testID="line-count">{cursor.lines} lines</Text>
           <Pressable testID="status-language-btn" onPress={() => setLangOpen(true)}>
             <Text style={[styles.statusText, { color: colors.brandPrimary }]}>{langInfo.name}</Text>
           </Pressable>
@@ -517,6 +525,7 @@ export default function EditorScreen() {
           <SheetRow testID="more-goto" icon="format-list-numbered" label="Go to line" onPress={() => { setMoreOpen(false); setGotoOpen(true); }} />
           <SheetRow testID="more-rename" icon="pencil-outline" label="Rename" onPress={() => { setMoreOpen(false); setRenameOpen(true); }} />
           <SheetRow testID="more-share" icon="share-variant-outline" label="Share / Export" onPress={async () => { setMoreOpen(false); const r = await shareText(doc.name, textRef.current).catch(() => null); if (r === "copied") toast("Copied to clipboard", "success"); }} />
+          <SheetRow testID="more-compare" icon="compare-horizontal" label="Compare with another text" onPress={() => { flush(); setMoreOpen(false); const id = doc.id; setTimeout(() => router.push({ pathname: "/compare", params: { docId: id } }), 300); }} />
           <SheetRow testID="more-copy" icon="content-copy" label="Copy all text" onPress={async () => { await copyText(textRef.current); setMoreOpen(false); toast("Copied to clipboard", "success"); }} />
           <SheetRow testID="more-settings" icon="cog-outline" label="Editor settings" onPress={() => { setMoreOpen(false); router.push("/settings"); }} />
           <SheetRow testID="more-close" icon="close-box-outline" label="Close tab" onPress={() => { setMoreOpen(false); closeTab(doc.id); }} />
@@ -605,6 +614,8 @@ const useStyles = makeStyles((c) => ({
   keys: { alignItems: "center", paddingHorizontal: spacing.xs, gap: 2 },
   key: { flexShrink: 0, minWidth: 40, height: 38, paddingHorizontal: spacing.sm, borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
   keyText: { color: c.onSurfaceTertiary, fontFamily: MONO, fontSize: 15 },
-  status: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: spacing.md, paddingTop: spacing.xs, backgroundColor: c.surfaceSecondary, gap: spacing.sm },
-  statusText: { color: c.muted, fontSize: 11, fontFamily: MONO },
+  status: { flexDirection: "row", flexWrap: "wrap", rowGap: 2, justifyContent: "space-between", alignItems: "center", paddingHorizontal: spacing.md, paddingTop: spacing.xs, backgroundColor: c.surfaceSecondary, gap: spacing.sm },
+  statusText: { color: c.onSurfaceSecondary, fontSize: 11, fontFamily: MONO },
+  statusPill: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: spacing.sm, height: 22, borderRadius: radius.sm, backgroundColor: c.brandTertiary },
+  statusStrong: { color: c.onBrandTertiary, fontSize: 11, fontFamily: MONO, fontWeight: "700" },
 }));
