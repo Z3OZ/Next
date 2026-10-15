@@ -31,7 +31,9 @@ function Pulse({ text }: { text: string }) {
 }
 
 export default function CheckScreen() {
-  const { docId } = useLocalSearchParams<{ docId: string }>();
+  const { docId, selStart, selEnd } = useLocalSearchParams<{ docId: string; selStart?: string; selEnd?: string }>();
+  const selRange = selStart && selEnd ? [Number(selStart), Number(selEnd)] as const : null;
+  const [scope, setScope] = useState<"tab" | "selection">(selRange ? "selection" : "tab");
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const styles = useStyles();
@@ -52,6 +54,7 @@ export default function CheckScreen() {
   const [applied, setApplied] = useState<Set<number>>(new Set());
 
   const content = doc?.content ?? "";
+  const aiText = scope === "selection" && selRange ? content.slice(selRange[0], selRange[1]) : content;
   const result = useMemo(() => {
     if (asCode) {
       const r = analyzeCode(content);
@@ -112,7 +115,7 @@ export default function CheckScreen() {
     setAiError(null);
     setApplied(new Set());
     try {
-      const r = await api.coach(content, asCode ? "code" : "writing", lang.name);
+      const r = await api.coach(aiText, asCode ? "code" : "writing", lang.name);
       setAi(r);
     } catch (e) {
       setAiError(e instanceof Error ? e.message : "Analysis failed");
@@ -247,6 +250,21 @@ export default function CheckScreen() {
         </ScrollView>
       ) : (
         <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xl }} testID="ai-results">
+          <View style={styles.scopeBox} testID="ai-scope">
+            <Icon name="tab" size={16} color={colors.onBrandTertiary} />
+            <Text style={styles.scopeText} numberOfLines={2}>
+              Only analyzing {scope === "selection" ? "your selected text in" : "the open tab"} “{doc.name}” · {(aiText.match(/\S+/g) ?? []).length} words. Other tabs and files are not sent.
+            </Text>
+          </View>
+          {selRange ? (
+            <View style={[styles.modeRow, { paddingTop: 0 }]}>
+              {(["selection", "tab"] as const).map((s) => (
+                <Pressable key={s} testID={`ai-scope-${s}`} onPress={() => { setScope(s); setAi(null); }} style={[styles.chip, scope === s && styles.chipActive]}>
+                  <Text style={[styles.chipText, scope === s && styles.chipTextActive]}>{s === "selection" ? "Selected text" : "Whole tab"}</Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
           {!ai && !aiLoading && !aiError ? (
             <View style={styles.emptyBox}>
               <Icon name="robot-happy-outline" size={44} color={colors.brandPrimary} />
@@ -254,7 +272,7 @@ export default function CheckScreen() {
               <Text style={[styles.muted, { textAlign: "center" }]}>
                 {asCode ? "Get bug finds, readability and performance suggestions." : "Get personalized feedback on grammar, clarity and style, plus tips to level up your writing."} Requires internet.
               </Text>
-              <Button testID="run-ai-btn" label="Analyze with AI" icon="creation" onPress={runAi} disabled={!content.trim()} />
+              <Button testID="run-ai-btn" label="Analyze with AI" icon="creation" onPress={runAi} disabled={!aiText.trim()} />
             </View>
           ) : null}
           {aiLoading ? <Pulse text={asCode ? "Reviewing code…" : "Analyzing text…"} /> : null}
@@ -354,4 +372,6 @@ const useStyles = makeStyles((c) => ({
   tip: { flexDirection: "row", gap: spacing.sm, marginHorizontal: spacing.lg, marginBottom: spacing.sm, padding: spacing.md, borderRadius: radius.md, backgroundColor: c.brandTertiary },
   tipText: { color: c.onSurface, fontSize: 13, lineHeight: 19, flex: 1 },
   skel: { height: 64, borderRadius: radius.md, backgroundColor: c.surfaceTertiary },
+  scopeBox: { flexDirection: "row", alignItems: "center", gap: spacing.sm, margin: spacing.lg, marginBottom: spacing.sm, padding: spacing.md, borderRadius: radius.md, backgroundColor: c.brandTertiary },
+  scopeText: { flex: 1, color: c.onBrandTertiary, fontSize: 12, lineHeight: 17 },
 }));

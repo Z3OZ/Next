@@ -146,6 +146,12 @@ export default function SettingsScreen() {
           <Toggle k="autocomplete" label="Autocomplete & snippets" desc="Suggest keywords, words and snippets as you type" />
           <Toggle k="autoIndent" label="Auto indent" desc="Keep indentation and continue lists on new lines" />
           <Toggle k="autoClose" label="Auto-close brackets & quotes" />
+          <Toggle k="confirmCloseTab" label="Confirm before closing a tab" desc="Prevents closing tabs by accident" />
+          <View style={styles.rowCol}>
+            <Text style={styles.label}>Zoom {Math.round((settings.zoom ?? 1) * 100)}%</Text>
+            <Segmented testID="zoom" value={settings.zoom ?? 1} onChange={(v) => updateSettings({ zoom: v })} options={[{ v: 0.75, l: "75%" }, { v: 1, l: "100%" }, { v: 1.25, l: "125%" }, { v: 1.5, l: "150%" }, { v: 2, l: "200%" }]} />
+            <Text style={styles.desc}>Tip: pinch the text in the editor or use the slider in the status bar.</Text>
+          </View>
           <View style={styles.rowCol}>
             <Text style={styles.label}>Tab size</Text>
             <Segmented testID="tab-size" value={settings.tabSize} onChange={(v) => updateSettings({ tabSize: v })} options={[{ v: 2, l: "2 spaces" }, { v: 4, l: "4 spaces" }, { v: 0, l: "Tab" }]} />

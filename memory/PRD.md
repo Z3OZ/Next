@@ -34,6 +34,12 @@ Build an APK Android app that clones all features of Jota++ (text editor) plus m
 - Text Compare screen: word/line diff, similarity %, added/removed/changed/same, locations, similarities, marked view, previous comparisons with recount
 - Status bar: cursor Ln/Col, words, chars, lines
 
+## Iteration 3 (2026-06)
+- Double-tap tab to rename; close-tab confirmation (+don't ask again, reopen closed tab, settings toggle)
+- Editor TextInput now scrolls natively (no vertical jumping); line-number gutter synced & ~50% narrower
+- AI Coach scope: only open tab or selected text, with notice
+- Zoom: pinch gesture, status-bar slider, settings presets
+
 ## Backlog
 - P1: Full dictionary-based spell check (currently common-misspellings list), Save to device folders (SAF), encoding selection
 - P1: Split-screen / side-by-side diff, branching of versions

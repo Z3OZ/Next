@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useRef, useState } from "react";
-import { Platform, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Animated, Platform, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
 import type { EditorStyle } from "@/src/lib/fonts";
 import { applyMatches, Seg, tokenizeLines } from "@/src/lib/highlight";
@@ -20,7 +20,6 @@ type Props = {
   matches: [number, number][];
   activeMatch: number;
   inputRef: React.RefObject<TextInput | null>;
-  scrollRef: React.RefObject<ScrollView | null>;
   bottomPad: number;
 };
 
@@ -111,7 +110,8 @@ export function RichEditor(p: Props) {
   if (hRef.current.length > lines.length) hRef.current.length = lines.length;
 
   const digits = String(lines.length).length;
-  const gutterW = p.lineNumbers ? Math.ceil(Math.max(2, digits) * size * 0.62 + 16) : 0;
+  const gutterW = p.lineNumbers ? Math.ceil(digits * Math.max(8, size * 0.7) * 0.62 + 6) : 0;
+  const scrollY = useRef(new Animated.Value(0)).current;
   const maxLen = useMemo(() => (p.wordWrap ? 0 : lines.reduce((m, l) => Math.max(m, l.length), 0)), [lines, p.wordWrap]);
 
   const textStyle = {
@@ -129,9 +129,10 @@ export function RichEditor(p: Props) {
       {...(children ? {} : { value: p.value })}
       onChangeText={p.onChangeText}
       onSelectionChange={(e) => p.onSelectionChange(e.nativeEvent.selection)}
+      onScroll={(e) => scrollY.setValue(e.nativeEvent.contentOffset.y)}
       selection={p.selection}
       multiline
-      scrollEnabled={false}
+      scrollEnabled
       autoCorrect={false}
       autoCapitalize="none"
       spellCheck={false}
@@ -143,7 +144,8 @@ export function RichEditor(p: Props) {
       style={[
         textStyle,
         styles.input,
-        p.wordWrap ? styles.flex : { minWidth: Math.ceil(maxLen * size * 0.62) + 64 },
+        { paddingBottom: p.bottomPad },
+        p.wordWrap ? styles.flex : { flex: 1, minWidth: Math.ceil(maxLen * size * 0.62) + 64 },
         IS_WEB ? ({ caretColor: colors.caret, outlineStyle: "none", whiteSpace: p.wordWrap ? "pre-wrap" : "pre" } as object) : null,
       ]}
     >
@@ -152,44 +154,44 @@ export function RichEditor(p: Props) {
   );
 
   return (
-    <ScrollView ref={p.scrollRef} style={styles.flex} contentContainerStyle={{ paddingBottom: p.bottomPad }} keyboardShouldPersistTaps="handled" testID="editor-scroll">
-      <View style={styles.row}>
-        {p.lineNumbers ? (
-          <View style={[styles.gutter, { width: gutterW, backgroundColor: colors.gutter, borderRightColor: colors.divider }]} testID="line-gutter">
+    <View style={[styles.flex, styles.row]} testID="editor-scroll">
+      {p.lineNumbers ? (
+        <View style={[styles.gutterClip, { width: gutterW, backgroundColor: colors.gutter, borderRightColor: colors.divider }]} testID="line-gutter">
+          <Animated.View style={{ paddingTop: PAD_TOP, transform: [{ translateY: Animated.multiply(scrollY, -1) }] }}>
             {lines.map((_, i) => (
               <Text
                 key={i}
-                style={{ height: measure ? heights[i] ?? lineHeight : lineHeight, lineHeight, fontFamily: family, fontSize: size * 0.8, color: colors.onGutter, textAlign: "right", paddingRight: 8, includeFontPadding: false }}
+                style={{ height: measure ? heights[i] ?? lineHeight : lineHeight, lineHeight, fontFamily: family, fontSize: Math.max(8, size * 0.7), color: colors.onGutter, textAlign: "right", paddingRight: 3, includeFontPadding: false }}
               >
                 {i + 1}
               </Text>
             ))}
+          </Animated.View>
+        </View>
+      ) : null}
+      <View style={[styles.flex, styles.editArea]}>
+        {measure ? (
+          <View style={[styles.measure, { pointerEvents: "none" }]}>
+            {lines.map((l, i) => (
+              <Text key={i} style={textStyle} onLayout={(e) => onRowLayout(i, e.nativeEvent.layout.height)}>{l || " "}</Text>
+            ))}
           </View>
         ) : null}
-        <View style={[styles.flex, styles.editArea]}>
-          {measure ? (
-            <View style={[styles.measure, { pointerEvents: "none" }]}>
-              {lines.map((l, i) => (
-                <Text key={i} style={textStyle} onLayout={(e) => onRowLayout(i, e.nativeEvent.layout.height)}>{l || " "}</Text>
-              ))}
-            </View>
-          ) : null}
-          {p.wordWrap ? input : (
-            <ScrollView horizontal keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator contentContainerStyle={{ flexGrow: 1 }}>
-              {input}
-            </ScrollView>
-          )}
-        </View>
+        {p.wordWrap ? input : (
+          <ScrollView horizontal keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator style={styles.flex} contentContainerStyle={{ flexGrow: 1 }}>
+            {input}
+          </ScrollView>
+        )}
       </View>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   row: { flexDirection: "row", alignItems: "stretch" },
-  gutter: { paddingTop: PAD_TOP, borderRightWidth: StyleSheet.hairlineWidth },
+  gutterClip: { overflow: "hidden", borderRightWidth: StyleSheet.hairlineWidth },
   editArea: { position: "relative", overflow: "hidden" },
-  measure: { position: "absolute", left: 8, right: PAD_RIGHT, top: PAD_TOP, opacity: 0 },
-  input: { paddingTop: PAD_TOP, paddingBottom: 0, paddingLeft: 8, paddingRight: PAD_RIGHT, margin: 0, backgroundColor: "transparent", borderWidth: 0 },
+  measure: { position: "absolute", left: 6, right: PAD_RIGHT, top: PAD_TOP, opacity: 0 },
+  input: { paddingTop: PAD_TOP, paddingLeft: 6, paddingRight: PAD_RIGHT, margin: 0, backgroundColor: "transparent", borderWidth: 0 },
 });

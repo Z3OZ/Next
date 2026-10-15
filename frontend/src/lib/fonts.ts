@@ -69,5 +69,5 @@ export function resolveEditorStyle(s: Settings, langId: string, scheme: ColorSch
   const base: Palette = pal && pal[scheme] ? { ...pal[scheme]! } : themePalette(colors);
   const textColor = o.textColor || s.textColor;
   if (textColor) base.plain = textColor;
-  return { family, size: o.fontSize || s.fontSize, lineSpacing: s.lineSpacing || 1.5, palette: base };
+  return { family, size: Math.round((o.fontSize || s.fontSize) * (s.zoom || 1)), lineSpacing: s.lineSpacing || 1.5, palette: base };
 }

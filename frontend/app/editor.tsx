@@ -2,6 +2,8 @@ import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useSt
 import { AppState, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Slider from "@react-native-community/slider";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 
@@ -31,7 +33,7 @@ export default function EditorScreen() {
   const { colors, scheme } = useTheme();
   const toast = useToast();
   const store = useStore();
-  const { docs, activeId, openTabs, settings, updateDoc, addVersion, getVersions, openDoc, closeTab, createDoc } = store;
+  const { docs, activeId, openTabs, settings, updateDoc, addVersion, getVersions, openDoc, closeTab, createDoc, updateSettings } = store;
   const doc = docs.find((d) => d.id === activeId) ?? null;
 
   const [text, setText] = useState("");
@@ -46,7 +48,13 @@ export default function EditorScreen() {
   const stacks = useRef(new Map<string, { undo: string[]; redo: string[]; last: number }>());
   const [, force] = useState(0);
   const inputRef = useRef<TextInput | null>(null);
-  const scrollRef = useRef<ScrollView | null>(null);
+  const [liveZoom, setLiveZoom] = useState<number | null>(null);
+  const pinchBase = useRef(1);
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
+  const [closeAsk, setCloseAsk] = useState<string | null>(null);
+  const lastClosed = useRef<string | null>(null);
+  const lastTap = useRef<{ id: string; t: number }>({ id: "", t: 0 });
 
   // find
   const [findOpen, setFindOpen] = useState(false);
@@ -298,11 +306,12 @@ export default function EditorScreen() {
   }, [findOpen, findQ, caseS, useRegex, deferred]);
   const activeMatch = matches.length ? Math.min(matchIdx, matches.length - 1) : -1;
 
-  const editorStyle = useMemo(() => resolveEditorStyle(settings, lang.effective, scheme, colors), [settings, lang.effective, scheme, colors]);
-  const lineHeight = Math.round(editorStyle.size * editorStyle.lineSpacing);
+  const editorStyle = useMemo(() => resolveEditorStyle({ ...settings, zoom: liveZoom ?? settings.zoom }, lang.effective, scheme, colors), [settings, liveZoom, lang.effective, scheme, colors]);
   const scrollToOffset = (off: number) => {
     const line = textRef.current.slice(0, off).split("\n").length - 1;
-    scrollRef.current?.scrollTo({ y: Math.max(0, line * lineHeight - 120), animated: true });
+    void line;
+    // the editor scrolls natively to the caret once it has focus
+    setTimeout(() => inputRef.current?.focus(), 80);
   };
   const gotoMatch = (i: number) => {
     if (!matches.length) return;
@@ -349,7 +358,57 @@ export default function EditorScreen() {
     const id = doc?.id;
     if (!id) return;
     // let the sheet modal dismiss before pushing a new screen
-    setTimeout(() => router.push({ pathname: route, params: { docId: id } }), wasOpen ? 300 : 0);
+    const s = selRef.current;
+    const params: Record<string, string> = { docId: id };
+    if (route === "/check" && s.end > s.start) {
+      params.selStart = String(s.start);
+      params.selEnd = String(s.end);
+    }
+    setTimeout(() => router.push({ pathname: route, params }), wasOpen ? 300 : 0);
+  };
+
+  const zoom = liveZoom ?? settings.zoom ?? 1;
+  const pinch = useMemo(
+    () =>
+      Gesture.Pinch()
+        .runOnJS(true)
+        .onStart(() => { pinchBase.current = settingsRef.current.zoom ?? 1; })
+        .onUpdate((e) => {
+          const z = Math.round(Math.min(2.5, Math.max(0.5, pinchBase.current * e.scale)) * 20) / 20;
+          setLiveZoom((prev) => (prev === z ? prev : z));
+        })
+        .onEnd(() => {
+          setLiveZoom((z) => {
+            if (z != null) updateSettings({ zoom: z });
+            return null;
+          });
+        }),
+    [updateSettings],
+  );
+
+  const requestClose = (id: string) => {
+    if (settings.confirmCloseTab === false) return doClose(id);
+    setCloseAsk(id);
+  };
+  const doClose = (id: string) => {
+    if (id === activeId) flush();
+    lastClosed.current = id;
+    closeTab(id);
+    setCloseAsk(null);
+  };
+  const onTabPress = (id: string) => {
+    const now = Date.now();
+    const isDouble = lastTap.current.id === id && now - lastTap.current.t < 350;
+    lastTap.current = { id, t: now };
+    if (id !== activeId) {
+      tap();
+      flush();
+      openDoc(id);
+    }
+    if (isDouble) {
+      lastTap.current = { id: "", t: 0 };
+      setRenameOpen(true);
+    }
   };
 
   if (!doc) {
@@ -390,10 +449,10 @@ export default function EditorScreen() {
             if (!d) return null;
             const active = id === activeId;
             return (
-              <Pressable key={id} testID={`tab-${id}`} onPress={() => { if (!active) { tap(); flush(); openDoc(id); } }} style={[styles.tab, active && styles.tabActive]}>
+              <Pressable key={id} testID={`tab-${id}`} onPress={() => onTabPress(id)} style={[styles.tab, active && styles.tabActive]}>
                 <Text style={[styles.tabText, active && styles.tabTextActive]} numberOfLines={1}>{d.name}</Text>
                 {active && saveState === "unsaved" ? <View style={styles.dot} /> : null}
-                <Pressable testID={`close-tab-${id}`} hitSlop={8} onPress={() => { if (active) flush(); closeTab(id); }}>
+                <Pressable testID={`close-tab-${id}`} hitSlop={8} onPress={() => requestClose(id)}>
                   <Icon name="close" size={14} color={active ? colors.onSurface : colors.muted} />
                 </Pressable>
               </Pressable>
@@ -457,7 +516,11 @@ export default function EditorScreen() {
       ) : null}
 
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-        <View style={{ flex: 1, backgroundColor: colors.surface }}>
+        <GestureDetector gesture={pinch}>
+        <View style={{ flex: 1, backgroundColor: colors.surface }} collapsable={false}>
+          {liveZoom != null ? (
+            <View style={styles.zoomBadge} testID="zoom-badge"><Text style={styles.zoomBadgeText}>{Math.round(liveZoom * 100)}%</Text></View>
+          ) : null}
           <RichEditor
             value={text}
             onChangeText={onChangeText}
@@ -471,10 +534,10 @@ export default function EditorScreen() {
             matches={findOpen ? matches : []}
             activeMatch={activeMatch}
             inputRef={inputRef}
-            scrollRef={scrollRef}
-            bottomPad={160}
+            bottomPad={48}
           />
         </View>
+        </GestureDetector>
 
         {suggestions.length ? (
           <View style={styles.suggestWrap} testID="autocomplete-bar">
@@ -513,6 +576,26 @@ export default function EditorScreen() {
           <Pressable testID="status-language-btn" onPress={() => setLangOpen(true)}>
             <Text style={[styles.statusText, { color: colors.brandPrimary }]}>{langInfo.name}</Text>
           </Pressable>
+          <View style={styles.zoomRow}>
+            <Icon name="magnify-minus-outline" size={14} color={colors.muted} />
+            <Slider
+              testID="zoom-slider"
+              style={{ width: 110, height: 28 }}
+              minimumValue={0.5}
+              maximumValue={2.5}
+              step={0.05}
+              value={settings.zoom ?? 1}
+              onValueChange={(v) => setLiveZoom(Math.round(v * 20) / 20)}
+              onSlidingComplete={(v) => { updateSettings({ zoom: Math.round(v * 20) / 20 }); setLiveZoom(null); }}
+              minimumTrackTintColor={colors.brandPrimary}
+              maximumTrackTintColor={colors.borderStrong}
+              thumbTintColor={colors.brandPrimary}
+            />
+            <Icon name="magnify-plus-outline" size={14} color={colors.muted} />
+            <Pressable testID="zoom-reset-btn" onPress={() => updateSettings({ zoom: 1 })}>
+              <Text style={styles.statusText} testID="zoom-value">{Math.round(zoom * 100)}%</Text>
+            </Pressable>
+          </View>
         </View>
       </KeyboardAvoidingView>
 
@@ -528,8 +611,24 @@ export default function EditorScreen() {
           <SheetRow testID="more-compare" icon="compare-horizontal" label="Compare with another text" onPress={() => { flush(); setMoreOpen(false); const id = doc.id; setTimeout(() => router.push({ pathname: "/compare", params: { docId: id } }), 300); }} />
           <SheetRow testID="more-copy" icon="content-copy" label="Copy all text" onPress={async () => { await copyText(textRef.current); setMoreOpen(false); toast("Copied to clipboard", "success"); }} />
           <SheetRow testID="more-settings" icon="cog-outline" label="Editor settings" onPress={() => { setMoreOpen(false); router.push("/settings"); }} />
-          <SheetRow testID="more-close" icon="close-box-outline" label="Close tab" onPress={() => { setMoreOpen(false); closeTab(doc.id); }} />
+          <SheetRow testID="more-close" icon="close-box-outline" label="Close tab" onPress={() => { setMoreOpen(false); setTimeout(() => requestClose(doc.id), 300); }} />
+          {lastClosed.current && !openTabs.includes(lastClosed.current) && docs.some((d) => d.id === lastClosed.current) ? (
+            <SheetRow testID="more-reopen" icon="tab-plus" label="Reopen closed tab" onPress={() => { setMoreOpen(false); if (lastClosed.current) openDoc(lastClosed.current); }} />
+          ) : null}
         </ScrollView>
+      </Sheet>
+
+      <Sheet visible={!!closeAsk} onClose={() => setCloseAsk(null)} title="Close this tab?" testID="close-tab-sheet">
+        <Text style={styles.sheetText}>
+          “{docs.find((d) => d.id === closeAsk)?.name}” is saved and stays in your files — you can reopen it any time.
+        </Text>
+        <View style={{ flexDirection: "row", gap: spacing.sm, marginTop: spacing.lg }}>
+          <Button testID="close-tab-cancel" label="Keep open" variant="secondary" style={{ flex: 1 }} onPress={() => setCloseAsk(null)} />
+          <Button testID="close-tab-confirm" label="Close tab" style={{ flex: 1 }} onPress={() => closeAsk && doClose(closeAsk)} />
+        </View>
+        <Pressable testID="close-tab-dont-ask" onPress={() => { updateSettings({ confirmCloseTab: false }); if (closeAsk) doClose(closeAsk); }} style={{ alignSelf: "center", padding: spacing.md }}>
+          <Text style={[styles.sheetText, { color: colors.brandPrimary }]}>Close and don’t ask again</Text>
+        </Pressable>
       </Sheet>
 
       <Sheet visible={langOpen} onClose={() => setLangOpen(false)} title="Language mode" testID="language-sheet">
@@ -563,7 +662,7 @@ export default function EditorScreen() {
           const ls = textRef.current.split("\n").slice(0, n - 1).reduce((a, l) => a + l.length + 1, 0);
           const ns = { start: ls, end: ls };
           selRef.current = ns; setSel(ns); setForcedSel(ns);
-          scrollRef.current?.scrollTo({ y: Math.max(0, (n - 1) * lineHeight - 120), animated: true });
+          setTimeout(() => inputRef.current?.focus(), 350);
           setGotoOpen(false);
         }}
       />
@@ -616,6 +715,10 @@ const useStyles = makeStyles((c) => ({
   keyText: { color: c.onSurfaceTertiary, fontFamily: MONO, fontSize: 15 },
   status: { flexDirection: "row", flexWrap: "wrap", rowGap: 2, justifyContent: "space-between", alignItems: "center", paddingHorizontal: spacing.md, paddingTop: spacing.xs, backgroundColor: c.surfaceSecondary, gap: spacing.sm },
   statusText: { color: c.onSurfaceSecondary, fontSize: 11, fontFamily: MONO },
+  zoomRow: { flexDirection: "row", alignItems: "center", gap: 2 },
+  zoomBadge: { position: "absolute", top: spacing.md, alignSelf: "center", paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.pill, backgroundColor: c.surfaceInverse, zIndex: 2 },
+  zoomBadgeText: { color: c.onSurfaceInverse, fontWeight: "700", fontSize: 13 },
+  sheetText: { color: c.onSurfaceSecondary, fontSize: 14, lineHeight: 20 },
   statusPill: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: spacing.sm, height: 22, borderRadius: radius.sm, backgroundColor: c.brandTertiary },
   statusStrong: { color: c.onBrandTertiary, fontSize: 11, fontFamily: MONO, fontWeight: "700" },
 }));

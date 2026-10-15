@@ -5,6 +5,7 @@ import { StatusBar } from "expo-status-bar";
 import { LogBox, View } from "react-native";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { ErrorBoundary } from "@/src/components/error-boundary";
 import { ToastProvider } from "@/src/components/ui";
@@ -40,6 +41,7 @@ export default function RootLayout() {
   if (!loaded) return null;
   return (
     <ErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <KeyboardProvider>
@@ -51,6 +53,7 @@ export default function RootLayout() {
           </KeyboardProvider>
         </QueryClientProvider>
       </SafeAreaProvider>
+      </GestureHandlerRootView>
     </ErrorBoundary>
   );
 }
